@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": ["**/*.min.*", "pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lock"],
+  "sortImports": {
+    "customGroups": [
+      {
+        "groupName": "react",
+        "elementNamePattern": ["react", "react-dom"],
+        "modifiers": ["value"]
+      },
+      {
+        "groupName": "project-side-effect",
+        "elementNamePattern": ["./**", "../**"],
+        "selector": "side_effect"
+      }
+    ],
+    "groups": [
+      "react",
+      ["builtin", "external", "subpath", "side_effect"],
+      [
+        "internal",
+        "parent",
+        "sibling",
+        "index",
+        "project-side-effect",
+        "style",
+        "side_effect_style"
+      ],
+      [
+        "type",
+        "type-builtin",
+        "type-external",
+        "type-internal",
+        "type-parent",
+        "type-sibling",
+        "type-index",
+        "type-import"
+      ],
+      "unknown"
+    ],
+    "newlinesBetween": true
+  }
+}

@@ -1,3 +1,11 @@
+# Repository-level Agent Guide
+
+## Working Principles
+
+## Project Map
+
+## Environment Requirements
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

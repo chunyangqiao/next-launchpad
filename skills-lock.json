@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "setup-oxc-pre-commit": {
+      "source": "chunyangqiao/joe-skills",
+      "sourceType": "github",
+      "skillPath": "skills/setup-oxc-pre-commit/SKILL.md",
+      "computedHash": "4beecc41e5b04e19c8056dd69e81aef682b4b203e63573c14cdf4098d6fc74bd",
+      "installMode": "copy"
+    }
+  }
+}
