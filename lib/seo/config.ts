@@ -1,20 +1,34 @@
-import { normalizeSiteUrl } from "./site-url";
-import { BRAND } from "@/lib/constants/brand";
+import { BRAND, BRAND_ALTERNATE_NAMES } from "@/lib/constants/brand";
+import {
+  DEFAULT_LOCALE,
+  DEFAULT_SEO_DESCRIPTION,
+  DEFAULT_SEO_TITLE,
+  NO_INDEX_PREFIXES,
+  SIGNUP_ACTION_NAME,
+  SIGNUP_PATH,
+  SUPPORT_LANGUAGES,
+  SUPPORTED_LOCALES,
+} from "@/lib/constants/seo";
+import { SOCIAL_MEDIA_LINKS } from "@/lib/constants/social";
+import { normalizeSiteUrl } from "@/lib/seo/site-url";
 
 import type { SEOConfig } from "@/types/seo";
 
 /**
- * @description 站点级 SEO 配置。业务路由表、页面文案、后台 SEO 配置不在这里 —— 它们由调用方传入。
- *
- * @description 主域名只认 NEXT_PUBLIC_SITE_URL：没配就不猜域名，带绝对地址的 metadata 一律不发。
+ * Runtime SEO configuration. Static values live in lib/constants so projects can
+ * customize the template without changing the implementation modules.
  */
 export const SEO_CONFIG: SEOConfig = {
   siteName: BRAND,
   siteUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
-  locales: ["en"],
-  defaultLocale: "en",
-  noindexPrefixes: [],
-  socialLinks: [],
-  organizationAlternateNames: [],
-  supportLanguages: [],
+  locales: SUPPORTED_LOCALES,
+  defaultLocale: DEFAULT_LOCALE,
+  defaultTitle: DEFAULT_SEO_TITLE,
+  defaultDescription: DEFAULT_SEO_DESCRIPTION,
+  noindexPrefixes: NO_INDEX_PREFIXES,
+  socialLinks: SOCIAL_MEDIA_LINKS,
+  organizationAlternateNames: BRAND_ALTERNATE_NAMES,
+  supportLanguages: SUPPORT_LANGUAGES,
+  signupPath: SIGNUP_PATH,
+  signupActionName: SIGNUP_ACTION_NAME,
 };

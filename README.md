@@ -20,6 +20,20 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## SEO
+
+Set `NEXT_PUBLIC_SITE_URL` to the public HTTP(S) origin before generating canonical
+URLs, hreflang links, structured data, or sitemap entries. Production robots rules
+are enabled with `NEXT_PUBLIC_APP_ENV=production` (the legacy
+`NEXT_PUBLIC_ENV=production` value is also supported).
+
+Project-specific values live in `lib/constants`: branding, locales, route SEO
+text, noindex prefixes, sitemap routes, social links, and robots directives. The
+generic implementation and public helpers are exposed from `lib/seo`. Shared
+SEO types live in `types/seo`, split between base value types and SEO domain
+contracts. Localized pages under `app/[language]` can use `routeMetadata` for
+table-driven metadata or call `buildMetadata` directly for data-driven pages.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

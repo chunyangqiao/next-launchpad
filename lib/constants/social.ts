@@ -1,4 +1,2 @@
-/**
- * @description 官方社交媒体账号
- */
-export const SOCIAL_MEIDA_LINKS = [{ key: "", url: "" }] as const;
+/** Official profile URLs exposed through Organization.sameAs. */
+export const SOCIAL_MEDIA_LINKS: readonly string[] = [];

@@ -1,6 +1,8 @@
 import { ARTICLE_DESCRIPTION_MAX_LENGTH, SCHEMA_ORG_CONTEXT } from "@/lib/constants/seo";
 import { SEO_CONFIG } from "@/lib/seo/config";
 import { buildCanonicalUrl } from "@/lib/seo/metadata/path";
+import { normalizeSiteUrl } from "@/lib/seo/site-url";
+import { htmlToPlainText } from "@/lib/seo/text";
 
 import type {
   ArticleJsonLdInput,
@@ -8,17 +10,13 @@ import type {
   FaqJsonLdItem,
   JsonLdObject,
   OrganizationJsonLdInput,
+  SEOConfig,
   WebApplicationJsonLdInput,
   WebPageJsonLdInput,
+  WebSiteJsonLdInput,
 } from "@/types/seo";
 
-/**
- * @description JSON-LD 构建函数。根据已有数据生成符合 schema.org 规范的数据
- *
- * 1. 不发请求。每个 builder 的入参都来自页面已经拿到的数据或 URL 本身。
- * 2. 数据不全就返回 null。半个 Article、没有问题的 FAQPage 对搜索引擎是负分。
- * 3. 结构化数据必须和页面上看得见的内容一致。
- */
+/** Pure schema.org builders. They never fetch data or emit a script tag. */
 
 /**
  * @description 站点级`@id`, 让WebSite / Article 都能指回同一个 Organization 节点
@@ -40,12 +38,12 @@ function webApplicationId(url: string): string {
  * 其它页面引用 Organization 时用这个：只写 @id 的话，引用所在的页面上并没有那个节点，
  * 富媒体测试会报缺少 name。只带 name，避免同一个 @id 在两处给出不同的 url。
  */
-function organizationRef(siteUrl: string): JsonLdObject {
-  return { "@type": "Organization", "@id": organizationId(siteUrl), name: SEO_CONFIG.siteName };
+function organizationRef(siteUrl: string, config: SEOConfig): JsonLdObject {
+  return { "@type": "Organization", "@id": organizationId(siteUrl), name: config.siteName };
 }
 
-function organizationImageUrl(siteUrl: string): string | undefined {
-  const path = SEO_CONFIG.defaultOgImage;
+function organizationImageUrl(siteUrl: string, config: SEOConfig): string | undefined {
+  const path = config.defaultOgImage;
 
   if (!path) {
     return undefined;
@@ -62,23 +60,28 @@ function organizationImageUrl(siteUrl: string): string | undefined {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-function absolute(siteUrl: string, locale: string, pathname: string): string {
-  return buildCanonicalUrl(siteUrl, locale, pathname);
+function absolute(siteUrl: string, locale: string, pathname: string, config: SEOConfig): string {
+  return buildCanonicalUrl(siteUrl, locale, pathname, config);
 }
 
-/** 时间戳 → ISO 字符串。认不出来就返回 undefined，让调用方少发一个字段。 */
-function toIsoDate(value: number | string | undefined | null): string | undefined {
+/** Convert a supported date value to ISO 8601, omitting invalid values. */
+function toIsoDate(value: Date | number | string | undefined | null): string | undefined {
   if (value === undefined || value === null || value === "") {
     return undefined;
   }
 
-  const timestamp = typeof value === "string" ? Number(value) : value;
+  const parsed =
+    value instanceof Date
+      ? value.getTime()
+      : typeof value === "string" && !/^\d+$/.test(value)
+        ? new Date(value).getTime()
+        : Number(value);
 
-  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+  if (!Number.isFinite(parsed) || parsed <= 0) {
     return undefined;
   }
 
-  const date = new Date(timestamp);
+  const date = new Date(parsed);
 
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
@@ -89,14 +92,15 @@ function clean(value: string | undefined | null): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-/** 富文本偶尔带 HTML；JSON-LD 里只能放纯文本。 */
-function toPlainText(value: string | undefined | null): string | undefined {
-  return clean(
-    value
-      ?.replace(/<[^>]*>/g, " ")
-      .replace(/&nbsp;/g, " ")
-      .replace(/\s+/g, " "),
-  );
+/** Convert rich text into visible plain text. */
+function requireSiteUrl(value: string): string {
+  const siteUrl = normalizeSiteUrl(value);
+
+  if (!siteUrl) {
+    throw new Error("[seo] JSON-LD builders require an absolute HTTP(S) site URL");
+  }
+
+  return siteUrl;
 }
 
 function isHttpUrl(value: string | undefined | null): value is string {
@@ -131,26 +135,27 @@ export function toBcp47(locale: string): string {
   return parts.join("-");
 }
 
-export function buildOrganizationJsonLd(input: OrganizationJsonLdInput): JsonLdObject {
-  const { siteUrl, locale, description, appLinks = [] } = input;
-  const sameAs = [
-    ...SEO_CONFIG.socialLinks,
-    ...appLinks.filter(isHttpUrl).map((link) => link.trim()),
-  ];
-  const image = organizationImageUrl(siteUrl);
+export function buildOrganizationJsonLd(
+  input: OrganizationJsonLdInput,
+  config: SEOConfig = SEO_CONFIG,
+): JsonLdObject {
+  const { locale, description, appLinks = [] } = input;
+  const siteUrl = requireSiteUrl(input.siteUrl);
+  const sameAs = [...config.socialLinks, ...appLinks.filter(isHttpUrl).map((link) => link.trim())];
+  const image = organizationImageUrl(siteUrl, config);
   const about = clean(description);
-  const languages = SEO_CONFIG.locales.map(toBcp47);
-  const contactPath = SEO_CONFIG.contactPath;
+  const languages = config.locales.map(toBcp47);
+  const contactPath = config.contactPath;
 
   return {
     "@context": SCHEMA_ORG_CONTEXT,
     "@type": "Organization",
     "@id": organizationId(siteUrl),
-    name: SEO_CONFIG.siteName,
-    ...(SEO_CONFIG.organizationAlternateNames.length
-      ? { alternateName: SEO_CONFIG.organizationAlternateNames }
+    name: config.siteName,
+    ...(config.organizationAlternateNames.length
+      ? { alternateName: config.organizationAlternateNames }
       : {}),
-    url: absolute(siteUrl, locale, ""),
+    url: absolute(siteUrl, locale, "", config),
     ...(image ? { logo: image, image } : {}),
     ...(about ? { description: about } : {}),
     ...(languages.length ? { knowsLanguage: languages } : {}),
@@ -159,9 +164,9 @@ export function buildOrganizationJsonLd(input: OrganizationJsonLdInput): JsonLdO
           contactPoint: {
             "@type": "ContactPoint",
             contactType: "customer support",
-            url: absolute(siteUrl, locale, contactPath),
-            ...(SEO_CONFIG.supportLanguages.length
-              ? { availableLanguage: SEO_CONFIG.supportLanguages }
+            url: absolute(siteUrl, locale, contactPath, config),
+            ...(config.supportLanguages.length
+              ? { availableLanguage: config.supportLanguages }
               : {}),
           },
         }
@@ -175,11 +180,17 @@ export function buildOrganizationJsonLd(input: OrganizationJsonLdInput): JsonLdO
  *
  * 不声明 SearchAction：站内没有全站搜索页时，指向不存在的入口会被判为与页面不符。
  */
-export function buildWebSiteJsonLd(siteUrl: string, locale: string): JsonLdObject {
+export function buildWebSiteJsonLd(
+  input: WebSiteJsonLdInput,
+  config: SEOConfig = SEO_CONFIG,
+): JsonLdObject {
+  const { locale } = input;
+  const siteUrl = requireSiteUrl(input.siteUrl);
+
   function entryPoint(pathname: string): JsonLdObject {
     return {
       "@type": "EntryPoint",
-      urlTemplate: absolute(siteUrl, locale, pathname),
+      urlTemplate: absolute(siteUrl, locale, pathname, config),
       actionPlatform: [
         "https://schema.org/DesktopWebPlatform",
         "https://schema.org/MobileWebPlatform",
@@ -189,19 +200,19 @@ export function buildWebSiteJsonLd(siteUrl: string, locale: string): JsonLdObjec
 
   const actions: JsonLdObject[] = [];
 
-  if (SEO_CONFIG.signupPath) {
+  if (config.signupPath) {
     actions.push({
       "@type": "RegisterAction",
-      name: "Create a free account",
-      target: entryPoint(SEO_CONFIG.signupPath),
+      name: config.signupActionName ?? "Create an account",
+      target: entryPoint(config.signupPath),
     });
   }
 
-  if (SEO_CONFIG.downloadPath) {
+  if (config.downloadPath) {
     actions.push({
       "@type": "DownloadAction",
-      name: `Download the ${SEO_CONFIG.siteName} app`,
-      target: entryPoint(SEO_CONFIG.downloadPath),
+      name: config.downloadActionName ?? `Download the ${config.siteName} app`,
+      target: entryPoint(config.downloadPath),
     });
   }
 
@@ -209,22 +220,26 @@ export function buildWebSiteJsonLd(siteUrl: string, locale: string): JsonLdObjec
     "@context": SCHEMA_ORG_CONTEXT,
     "@type": "WebSite",
     "@id": webSiteId(siteUrl),
-    name: SEO_CONFIG.siteName,
-    ...(SEO_CONFIG.organizationAlternateNames.length
-      ? { alternateName: SEO_CONFIG.organizationAlternateNames }
+    name: config.siteName,
+    ...(config.organizationAlternateNames.length
+      ? { alternateName: config.organizationAlternateNames }
       : {}),
-    url: absolute(siteUrl, locale, ""),
+    url: absolute(siteUrl, locale, "", config),
     inLanguage: toBcp47(locale),
-    publisher: organizationRef(siteUrl),
+    publisher: organizationRef(siteUrl, config),
     ...(actions.length ? { potentialAction: actions } : {}),
   };
 }
 
 /** WebApplication —— 只在首页输出，声明站点是一个网页 / 移动端都能用的应用。 */
-export function buildWebApplicationJsonLd(input: WebApplicationJsonLdInput): JsonLdObject {
-  const { siteUrl, locale, offers } = input;
-  const name = clean(input.name) ?? SEO_CONFIG.siteName;
-  const installPath = input.installPath ?? SEO_CONFIG.downloadPath;
+export function buildWebApplicationJsonLd(
+  input: WebApplicationJsonLdInput,
+  config: SEOConfig = SEO_CONFIG,
+): JsonLdObject {
+  const { locale, offers } = input;
+  const siteUrl = requireSiteUrl(input.siteUrl);
+  const name = clean(input.name) ?? config.siteName;
+  const installPath = input.installPath ?? config.downloadPath;
   const features = input.features ?? [];
   const operatingSystem = clean(input.operatingSystem);
   const category = clean(input.category);
@@ -235,31 +250,42 @@ export function buildWebApplicationJsonLd(input: WebApplicationJsonLdInput): Jso
     "@type": "WebApplication",
     "@id": webApplicationId(siteUrl),
     name,
-    url: absolute(siteUrl, locale, ""),
-    ...(installPath ? { installUrl: absolute(siteUrl, locale, installPath) } : {}),
+    url: absolute(siteUrl, locale, "", config),
+    ...(installPath ? { installUrl: absolute(siteUrl, locale, installPath, config) } : {}),
     ...(category ? { applicationCategory: category } : {}),
     ...(subCategory ? { applicationSubCategory: subCategory } : {}),
     ...(operatingSystem ? { operatingSystem } : {}),
     ...(features.length ? { featureList: features } : {}),
-    provider: organizationRef(siteUrl),
+    provider: organizationRef(siteUrl, config),
     ...(offers ? { offers } : {}),
   };
 }
 
 /** 某个页面的 BreadcrumbList 用的 @id，WebPage.breadcrumb 和 BreadcrumbList.@id 必须一致。 */
-export function breadcrumbIdFor(siteUrl: string, locale: string, pathname: string): string {
-  return `${absolute(siteUrl, locale, pathname)}#breadcrumb`;
+export function breadcrumbIdFor(
+  siteUrl: string,
+  locale: string,
+  pathname: string,
+  config: SEOConfig = SEO_CONFIG,
+): string {
+  const origin = requireSiteUrl(siteUrl);
+
+  return `${absolute(origin, locale, pathname, config)}#breadcrumb`;
 }
 
 /** WebPage —— 每个可收录页面一个，把页面挂到 WebSite（isPartOf）和 Organization（about）上。 */
-export function buildWebPageJsonLd(input: WebPageJsonLdInput): JsonLdObject | null {
+export function buildWebPageJsonLd(
+  input: WebPageJsonLdInput,
+  config: SEOConfig = SEO_CONFIG,
+): JsonLdObject | null {
   const name = clean(input.name);
 
   if (!name) {
     return null;
   }
 
-  const url = absolute(input.siteUrl, input.locale, input.pathname);
+  const siteUrl = requireSiteUrl(input.siteUrl);
+  const url = absolute(siteUrl, input.locale, input.pathname, config);
   const description = clean(input.description);
 
   return {
@@ -270,8 +296,8 @@ export function buildWebPageJsonLd(input: WebPageJsonLdInput): JsonLdObject | nu
     name,
     ...(description ? { description } : {}),
     inLanguage: toBcp47(input.locale),
-    isPartOf: { "@id": webSiteId(input.siteUrl) },
-    about: { "@id": organizationId(input.siteUrl) },
+    isPartOf: { "@id": webSiteId(siteUrl) },
+    about: { "@id": organizationId(siteUrl) },
     ...(input.breadcrumbId ? { breadcrumb: { "@id": input.breadcrumbId } } : {}),
   };
 }
@@ -287,6 +313,7 @@ export function buildBreadcrumbJsonLd(
   locale: string,
   trail: readonly BreadcrumbTrailItem[],
   options: { id?: string; homeOnly?: boolean } = {},
+  config: SEOConfig = SEO_CONFIG,
 ): JsonLdObject | null {
   const items = trail.filter((item) => clean(item.name));
 
@@ -294,11 +321,12 @@ export function buildBreadcrumbJsonLd(
     return null;
   }
 
+  const origin = requireSiteUrl(siteUrl);
   // 首页自己：唯一一项就是当前页，按规范当前页不带 item 链接
   const all: BreadcrumbTrailItem[] =
     items.length === 0
-      ? [{ name: SEO_CONFIG.siteName }]
-      : [{ name: SEO_CONFIG.siteName, path: "" }, ...items];
+      ? [{ name: config.siteName }]
+      : [{ name: config.siteName, path: "" }, ...items];
 
   return {
     "@context": SCHEMA_ORG_CONTEXT,
@@ -308,23 +336,27 @@ export function buildBreadcrumbJsonLd(
       "@type": "ListItem",
       position: index + 1,
       name: item.name.trim(),
-      ...(item.path === undefined ? {} : { item: absolute(siteUrl, locale, item.path) }),
+      ...(item.path === undefined ? {} : { item: absolute(origin, locale, item.path, config) }),
     })),
   };
 }
 
-/** Article —— 公告 / CMS 详情页用。字段全部来自页面已经取回来的数据。 */
-export function buildArticleJsonLd(input: ArticleJsonLdInput): JsonLdObject | null {
+/** Build Article data from content already fetched by the page. */
+export function buildArticleJsonLd(
+  input: ArticleJsonLdInput,
+  config: SEOConfig = SEO_CONFIG,
+): JsonLdObject | null {
   const headline = clean(input.headline);
 
   if (!headline) {
     return null;
   }
 
-  const url = absolute(input.siteUrl, input.locale, input.pathname);
+  const siteUrl = requireSiteUrl(input.siteUrl);
+  const url = absolute(siteUrl, input.locale, input.pathname, config);
   const datePublished = toIsoDate(input.datePublished);
   const dateModified = toIsoDate(input.dateModified) ?? datePublished;
-  const plainBody = toPlainText(input.body);
+  const plainBody = clean(htmlToPlainText(input.body));
   const description = plainBody?.slice(0, ARTICLE_DESCRIPTION_MAX_LENGTH).trim();
 
   return {
@@ -337,18 +369,18 @@ export function buildArticleJsonLd(input: ArticleJsonLdInput): JsonLdObject | nu
     ...(description ? { description } : {}),
     ...(datePublished ? { datePublished } : {}),
     ...(dateModified ? { dateModified } : {}),
-    author: organizationRef(input.siteUrl),
-    publisher: organizationRef(input.siteUrl),
+    author: organizationRef(siteUrl, config),
+    publisher: organizationRef(siteUrl, config),
   };
 }
 
-/**
- * FAQPage —— 传进来的必须是页面真的渲染了的那批问答。
- * 结构化数据和可见内容对不上是明确的违规项。
- */
+/** Structured FAQ entries must match the questions and answers visible on the page. */
 export function buildFaqJsonLd(items: readonly FaqJsonLdItem[]): JsonLdObject | null {
   const entries = items
-    .map((item) => ({ question: clean(item.question), answer: toPlainText(item.answer) }))
+    .map((item) => ({
+      question: clean(item.question),
+      answer: clean(htmlToPlainText(item.answer)),
+    }))
     .filter((item): item is { question: string; answer: string } =>
       Boolean(item.question && item.answer),
     );

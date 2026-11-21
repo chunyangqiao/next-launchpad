@@ -1,2 +1,2 @@
-export * from "./json-ld";
-export * from "./json-ld-script";
+export * from "./builders";
+export * from "./script";

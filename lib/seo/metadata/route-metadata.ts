@@ -1,15 +1,15 @@
 import { DEFAULT_SEO_NAMESPACE } from "@/lib/constants/seo";
 import { buildMetadata } from "@/lib/seo/metadata/build-metadata";
 
-import type { RouteMetadataInput, RouteParams, RouteSeoContext, RouteSeoText } from "@/types/seo";
+import type {
+  RouteMetadataInput,
+  RouteMetadataOptions,
+  RouteParams,
+  RouteSeoContext,
+  RouteSeoText,
+} from "@/types/seo";
 import type { Metadata } from "next";
 
-/**
- * 路由 → 当前语言的文案。没配键的字段返回 undefined（buildMetadata 会直接输出 null）。
- *
- * 翻译库缺键时通常返回 `${namespace}.${key}` 这样一个非空字符串；照搬会让 <title> 变成字面量，
- * 而且因为非空还会赢过调用方的兜底值。所以把它当成「没配」。
- */
 export function resolveRouteSeoText(
   route: string,
   context: RouteSeoContext,
@@ -18,30 +18,35 @@ export function resolveRouteSeoText(
   const entry = context.table[route] ?? {};
   const namespace = context.namespace ?? DEFAULT_SEO_NAMESPACE;
 
+  function clean(value: string | undefined): string | undefined {
+    const trimmed = value?.trim();
+
+    return trimmed || undefined;
+  }
+
   function translate(key: string | undefined): string | undefined {
     if (!key) {
       return undefined;
     }
 
+    if (!context.translate) {
+      throw new Error(`[seo] Route "${route}" uses translation key "${key}" without a translator`);
+    }
+
     const value = context.translate(key, values);
 
-    return value === `${namespace}.${key}` ? undefined : value;
+    return value === `${namespace}.${key}` ? undefined : clean(value);
   }
 
   return {
-    title: translate(entry.titleKey),
-    description: translate(entry.descKey),
-    keywords: translate(entry.keywordsKey),
+    title: clean(entry.title) ?? translate(entry.titleKey),
+    description: clean(entry.description) ?? translate(entry.descKey),
+    keywords: clean(entry.keywords) ?? translate(entry.keywordsKey),
     titleAbsolute: entry.titleAbsolute,
   };
 }
 
-/**
- * 页面级 generateMetadata 的统一入口：路由 → 路由表 → 翻译 → buildMetadata。
- *
- * 只做「取键、翻译、转交」，canonical / hreflang / robots 全部由 buildMetadata 决定，
- * 所以每个页面只需要给出自己的真实 pathname。
- */
+/** Resolve route text before handing canonical and social fields to buildMetadata. */
 export async function buildRouteMetadata(
   input: RouteMetadataInput,
   context: RouteSeoContext,
@@ -49,15 +54,18 @@ export async function buildRouteMetadata(
   const { locale, pathname, route, title, description, titleValues, noindex } = input;
   const text = resolveRouteSeoText(route ?? pathname, context, titleValues);
 
-  return buildMetadata({
-    locale,
-    pathname,
-    title: title ?? text.title,
-    titleAbsolute: text.titleAbsolute,
-    description: description ?? text.description,
-    keywords: text.keywords,
-    noindex,
-  });
+  return buildMetadata(
+    {
+      locale,
+      pathname,
+      title: title ?? text.title,
+      titleAbsolute: text.titleAbsolute,
+      description: description ?? text.description,
+      keywords: text.keywords,
+      noindex,
+    },
+    context.config,
+  );
 }
 
 const TEMPLATE_SEGMENT = /^\[[\w-]+\]$/;
@@ -89,9 +97,7 @@ function fillRouteTemplate(route: string, params: RouteParams): string {
 
       // 模板里的段名和目录名对不上（写错 / 目录改名）只会静默生成 '//'，这里直接抛出来让它第一次请求就暴露。
       if (typeof value !== "string" || !value) {
-        throw new Error(
-          `[seo] routeMetadata('${route}')：params 里没有 ${key}（模板段 ${segment}）`,
-        );
+        throw new Error(`[seo] routeMetadata('${route}') is missing param "${key}"`);
       }
 
       return encodePathSegment(value);
@@ -100,24 +106,16 @@ function fillRouteTemplate(route: string, params: RouteParams): string {
 }
 
 /**
- * 直接当 generateMetadata 导出的工厂，给「只需要路由表文案 + canonical」的页面 / layout 用：
- *
- *   const { routeMetadata } = ...;
- *   export const generateMetadata = routeMetadata("/market", context);
- *   export const generateMetadata = routeMetadata("/copy-trading/traders/[traderId]/settings", context, {
- *     noindex: true,
- *   });
- *
- * 只传路由表的键，动态段写模板 `[param]`；真实 pathname 由 params 里的同名值填进去（已 encode）。
- * 要查后端判断存不存在、或标题要拼参数的页面，照旧手写 generateMetadata 并调用 buildRouteMetadata。
+ * Create a generateMetadata export for a route-table entry.
+ * Dynamic segments use Next.js route placeholders and are safely URL encoded.
  */
 export function routeMetadata(
   route: string,
   context: RouteSeoContext,
-  options: { noindex?: boolean } = {},
+  options: RouteMetadataOptions = {},
 ) {
   if (route.includes("...")) {
-    throw new Error(`[seo] routeMetadata 不支持 catch-all 段，请手写 generateMetadata：${route}`);
+    throw new Error(`[seo] routeMetadata does not support catch-all segments: ${route}`);
   }
 
   return async function generateMetadata({
@@ -126,10 +124,17 @@ export function routeMetadata(
     params: Promise<RouteParams>;
   }): Promise<Metadata> {
     const resolved = await params;
+    const locale = resolved[options.localeParam ?? "language"];
+
+    if (typeof locale !== "string" || !locale) {
+      throw new Error(
+        `[seo] routeMetadata('${route}') is missing locale param "${options.localeParam ?? "language"}"`,
+      );
+    }
 
     return buildRouteMetadata(
       {
-        locale: resolved.language,
+        locale,
         pathname: fillRouteTemplate(route, resolved),
         route,
         noindex: options.noindex ?? context.table[route]?.noindex,

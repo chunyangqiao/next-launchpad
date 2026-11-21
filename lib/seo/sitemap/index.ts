@@ -1,1 +1,2 @@
-export * from "./sitemap-xml";
+export * from "./entries";
+export * from "./xml";

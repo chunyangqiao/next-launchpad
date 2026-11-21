@@ -1,13 +1,10 @@
 import type { SitemapUrlEntry } from "@/types/seo";
 
-/**
- * sitemap XML 的纯字符串拼装。不碰数据来源，只管把 URL 列表变成合法的 XML。
- *
- * 每条 <url> 只发 <loc> 和 <lastmod>：Google 只读 lastmod，changefreq / priority 已被忽略。
- */
+/** Pure sitemap XML serialization without route or data-source knowledge. */
 
 const XML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>';
 const SITEMAP_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9";
+const XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 
 /** XML 文本节点的 5 个保留字符。loc 里带 & 的查询串不转义会让整份文件解析失败。 */
 export function escapeXml(value: string): string {
@@ -35,14 +32,26 @@ export function buildSitemapIndexXml(entries: readonly SitemapUrlEntry[]): strin
 }
 
 export function buildUrlsetXml(entries: readonly SitemapUrlEntry[]): string {
-  const items = entries.map(
-    (entry) =>
-      `  <url>\n    <loc>${escapeXml(entry.loc)}</loc>\n    <lastmod>${escapeXml(entry.lastmod)}</lastmod>\n  </url>`,
+  const items = entries.map((entry) =>
+    [
+      "  <url>",
+      `    <loc>${escapeXml(entry.loc)}</loc>`,
+      `    <lastmod>${escapeXml(entry.lastmod)}</lastmod>`,
+      ...(entry.alternates ?? []).map(
+        ({ href, hreflang }) =>
+          `    <xhtml:link rel="alternate" hreflang="${escapeXml(hreflang)}" href="${escapeXml(href)}" />`,
+      ),
+      "  </url>",
+    ].join("\n"),
   );
 
-  return [XML_DECLARATION, `<urlset xmlns="${SITEMAP_NAMESPACE}">`, ...items, "</urlset>", ""].join(
-    "\n",
-  );
+  return [
+    XML_DECLARATION,
+    `<urlset xmlns="${SITEMAP_NAMESPACE}" xmlns:xhtml="${XHTML_NAMESPACE}">`,
+    ...items,
+    "</urlset>",
+    "",
+  ].join("\n");
 }
 
 /**

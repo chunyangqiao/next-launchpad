@@ -28,12 +28,7 @@ function compile(route: string): CompiledRoute {
   return { route, regex: new RegExp(`^${source}$`), keys };
 }
 
-/**
- * 用路由表创建匹配器：静态路由优先，动态路由按长度从长到短，
- * 保证 '/copy-trading/traders/[traderId]/profit' 先于 '/copy-trading/traders/[traderId]'。
- *
- * 编译只做一次，适合在模块级创建后复用。
- */
+/** Compile route patterns once, preferring static and then more specific dynamic routes. */
 export function createRouteMatcher(table: Record<string, RouteSeoEntry>): RouteMatcher {
   const compiled = Object.keys(table)
     .filter((route) => route !== "/")
@@ -86,7 +81,7 @@ export function createRouteMatcher(table: Record<string, RouteSeoEntry>): RouteM
   };
 }
 
-/** 去掉 '/{locale}' 前缀：'/en-us/spot/BTC_USDT' → '/spot/BTC_USDT'，'/en-us' → ''。 */
+/** Remove a complete locale prefix, for example "/en/docs/item" → "/docs/item". */
 export function stripLocalePrefix(pathname: string, locale: string): string {
   const prefix = `/${locale}`;
 

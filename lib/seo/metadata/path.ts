@@ -20,9 +20,11 @@ export function normalizeLocale(locale: string, config: SEOConfig = SEO_CONFIG):
   return config.locales.includes(locale) ? locale : config.defaultLocale;
 }
 
-/** segment-safe 前缀匹配：'/profile' 命中自身和 '/profile/xxx'，不命中 '/profileabc'。 */
+/** Match a complete path segment, not a string prefix such as "/profiled". */
 export function matchesPathPrefix(path: string, prefix: string): boolean {
-  return path === prefix || path.startsWith(`${prefix}/`);
+  const normalizedPrefix = normalizePathname(prefix);
+
+  return path === normalizedPrefix || path.startsWith(`${normalizedPrefix}/`);
 }
 
 /**
@@ -39,7 +41,7 @@ export function buildCanonicalUrl(
   return `${siteUrl}/${normalizeLocale(locale, config)}${normalizePathname(pathname)}`;
 }
 
-/** hreflang 表：每种语言一份地址，x-default 指向默认语言。 */
+/** Build one alternate per locale plus a stable x-default entry. */
 export function buildAlternateUrls(
   siteUrl: string,
   pathname: string,
