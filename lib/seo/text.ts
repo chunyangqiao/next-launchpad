@@ -49,3 +49,19 @@ export function htmlToPlainText(html: string | null | undefined): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+export function seoExcerpt(html: string | null | undefined, maxLength = 155): string | undefined {
+  const text = htmlToPlainText(html);
+
+  if (!text) {
+    return undefined;
+  }
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  const cut = text.slice(0, maxLength - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > maxLength / 2 ? cut.slice(0, lastSpace) : cut).trim()}…`;
+}

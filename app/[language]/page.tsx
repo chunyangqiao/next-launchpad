@@ -1,51 +1,35 @@
-import { SEO_ROUTE_TABLE } from "@/lib/constants/seo-routes";
-import {
-  buildOrganizationJsonLd,
-  buildWebPageJsonLd,
-  buildWebSiteJsonLd,
-  JsonLdScript,
-  routeMetadata,
-  SEO_CONFIG,
-} from "@/lib/seo";
+import { notFound } from "next/navigation";
 
-export const generateMetadata = routeMetadata("/", {
-  table: SEO_ROUTE_TABLE,
-  config: SEO_CONFIG,
-});
+import { DEFAULT_SEO_DESCRIPTION, DEFAULT_SEO_TITLE, isLocale } from "@/lib/constants/seo";
+import { homeJsonLd, JsonLd } from "@/lib/seo/json-ld";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export default async function HomePage({ params }: { params: Promise<{ language: string }> }) {
+export async function generateMetadata({ params }: PageProps<"/[language]">) {
   const { language } = await params;
-  const siteUrl = SEO_CONFIG.siteUrl;
-  const route = SEO_ROUTE_TABLE["/"];
-  const jsonLd = siteUrl
-    ? [
-        buildOrganizationJsonLd(
-          {
-            siteUrl,
-            locale: language,
-            description: SEO_CONFIG.defaultDescription,
-          },
-          SEO_CONFIG,
-        ),
-        buildWebSiteJsonLd({ siteUrl, locale: language }, SEO_CONFIG),
-        buildWebPageJsonLd(
-          {
-            siteUrl,
-            locale: language,
-            pathname: "",
-            name: route.title,
-            description: route.description,
-          },
-          SEO_CONFIG,
-        ),
-      ]
-    : null;
+
+  if (!isLocale(language)) {
+    notFound();
+  }
+
+  return pageMetadata({
+    language,
+    title: { absolute: DEFAULT_SEO_TITLE },
+    description: DEFAULT_SEO_DESCRIPTION,
+  });
+}
+
+export default async function HomePage({ params }: PageProps<"/[language]">) {
+  const { language } = await params;
+
+  if (!isLocale(language)) {
+    notFound();
+  }
 
   return (
     <main>
-      <h1>{SEO_CONFIG.defaultTitle}</h1>
-      <p>{SEO_CONFIG.defaultDescription}</p>
-      <JsonLdScript data={jsonLd} />
+      <h1>{DEFAULT_SEO_TITLE}</h1>
+      <p>{DEFAULT_SEO_DESCRIPTION}</p>
+      <JsonLd data={homeJsonLd(language)} />
     </main>
   );
 }

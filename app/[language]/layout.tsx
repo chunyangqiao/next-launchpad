@@ -2,22 +2,22 @@ import * as React from "react";
 
 import { notFound } from "next/navigation";
 
-import { SEO_CONFIG } from "@/lib/seo";
+import { isLocale, SUPPORTED_LOCALES } from "@/lib/constants/seo";
 
 export function generateStaticParams() {
-  return SEO_CONFIG.locales.map((language) => ({ language }));
+  return SUPPORTED_LOCALES.map((language) => ({ language }));
 }
 
-export default async function LanguageLayout({
-  children,
-  params,
-}: {
+interface LanguageLayoutProps {
   children: React.ReactNode;
   params: Promise<{ language: string }>;
-}) {
+}
+
+export default async function LanguageLayout(props: LanguageLayoutProps) {
+  const { children, params } = props;
   const { language } = await params;
 
-  if (!SEO_CONFIG.locales.includes(language)) {
+  if (!isLocale(language)) {
     notFound();
   }
 

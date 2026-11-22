@@ -22,17 +22,24 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## SEO
 
-Set `NEXT_PUBLIC_SITE_URL` to the public HTTP(S) origin before generating canonical
-URLs, hreflang links, structured data, or sitemap entries. Production robots rules
-are enabled with `NEXT_PUBLIC_APP_ENV=production` (the legacy
-`NEXT_PUBLIC_ENV=production` value is also supported).
+Set `NEXT_PUBLIC_SITE_URL` to the public HTTP(S) origin at build time. Canonical
+URLs, hreflang, structured data, and the sitemap use this origin, not the request
+host. Without a valid origin, URL-dependent page tags are omitted and the sitemap
+returns `503`.
 
-Project-specific values live in `lib/constants`: branding, locales, route SEO
-text, noindex prefixes, sitemap routes, social links, and robots directives. The
-generic implementation and public helpers are exposed from `lib/seo`. Shared
-SEO types live in `types/seo`, split between base value types and SEO domain
-contracts. Localized pages under `app/[language]` can use `routeMetadata` for
-table-driven metadata or call `buildMetadata` directly for data-driven pages.
+- **Page metadata:** Set site defaults in `app/layout.tsx`. For localized pages,
+  call `pageMetadata` from the page's `generateMetadata` with its language,
+  title, description, and path (without the language prefix). If a page is only
+  available in some configured locales, pass those as `locales` when building its
+  metadata and sitemap entry. Auth pages inherit `noindex` from their layout.
+- **Structured data:** The home page renders `<JsonLd data={homeJsonLd(language)} />`.
+  Other pages can import the relevant schema builder from `lib/seo/json-ld.tsx`.
+- **Crawlers:** Add public routes in `app/sitemap.xml/route.ts`. Supply `lastModified`
+  only when you know when the page changed. Paths in `NO_INDEX_PREFIXES` are
+  excluded. `app/robots.txt/route.ts` blocks crawling unless `NEXT_PUBLIC_APP_ENV`
+  is `production` (or, if unset, `NEXT_PUBLIC_ENV` is `production`). Production
+  uses the directives in `lib/constants/robots.ts` and returns `503` if the origin
+  is missing or invalid.
 
 ## Learn More
 

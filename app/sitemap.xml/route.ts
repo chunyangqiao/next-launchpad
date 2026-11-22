@@ -1,20 +1,19 @@
-import { SITEMAP_ROUTES } from "@/lib/constants/sitemap";
-import {
-  buildSitemapEntries,
-  buildUrlsetXml,
-  SEO_CONFIG,
-  siteUnavailableResponse,
-  sitemapResponse,
-} from "@/lib/seo";
+import { sitemapXml, siteUnavailable } from "@/lib/seo/crawlers";
+import { SITE_ORIGIN } from "@/lib/seo/urls";
+
+import type { SitemapRoute } from "@/lib/seo/crawlers";
+
+const routes: readonly SitemapRoute[] = [{ path: "/" }];
 
 export function GET() {
-  if (!SEO_CONFIG.siteUrl) {
-    return siteUnavailableResponse();
+  if (!SITE_ORIGIN) {
+    return siteUnavailable();
   }
 
-  const entries = buildSitemapEntries(SITEMAP_ROUTES, SEO_CONFIG.siteUrl, {
-    config: SEO_CONFIG,
+  return new Response(sitemapXml(SITE_ORIGIN, routes), {
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, max-age=0, s-maxage=1800",
+    },
   });
-
-  return sitemapResponse(buildUrlsetXml(entries));
 }

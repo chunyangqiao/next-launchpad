@@ -1,5 +1,8 @@
-/** Production directives supplied by the SEO ruleset. The site URL is added at runtime. */
-export const PRODUCTION_ROBOTS_RULES = `# 1. Rules for Global Search Engines (Google, Bing, Yahoo, DuckDuckGo)
+export const PRODUCTION_ROBOTS_RULES = `# Target Languages (In Priority Order):
+# EN, ZH, KO, RU
+# --------------------------------------------------
+
+# 1. Rules for Global Search Engines (Google, Bing, Yahoo, DuckDuckGo)
 User-agent: *
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -20,17 +23,13 @@ Allow: /*.gif
 Allow: /*.svg
 Allow: /*.webp
 # Allow crawling for prioritized target language directories
-Allow: /en-us/
-Allow: /zh-hans/
-Allow: /zh-hant/
-Allow: /ja-jp/
-Allow: /ko-kr/
-Allow: /ru-ru/
-Allow: /es-es/
-Allow: /pt-br/
-Allow: /vi-vn/
+Allow: /en/
+Allow: /zh/
+Allow: /ja/
+Allow: /ko/
+Allow: /ru/
 
-# 2. Baidu Bot (Đặc quyền cho thị trường Trung Quốc - Zh-Hans / Zh-Hant)
+# 2. Baidu Bot
 User-agent: Baiduspider
 User-agent: Baiduspider-image
 User-agent: Baiduspider-video
@@ -38,28 +37,27 @@ Disallow: /wp-admin/
 Disallow: /admin/
 Disallow: /api/
 Disallow: /*?*
-Allow: /zh-hans/
-Allow: /zh-hant/
+Allow: /zh/
 Allow: /*.css
 Allow: /*.js
 
-# 3. Naver Bot (Đặc quyền cho thị trường Hàn Quốc - Ko)
+# 3. Naver Bot
 User-agent: Yeti
 Disallow: /wp-admin/
 Disallow: /admin/
 Disallow: /api/
 Disallow: /*?*
-Allow: /ko-kr/
+Allow: /ko/
 Allow: /*.css
 Allow: /*.js
 
-# 4. Yandex Bot (Đặc quyền cho thị trường Nga & Đông Âu - Ru)
+# 4. Yandex Bot
 User-agent: Yandex
 Disallow: /wp-admin/
 Disallow: /admin/
 Disallow: /api/
 Disallow: /*?*
-Allow: /ru-ru/
+Allow: /ru/
 Allow: /*.css
 Allow: /*.js`;
 
