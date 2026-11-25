@@ -24,6 +24,19 @@ language codes, optionally with script and/or region subtags, as language
 prefixes. Unsupported prefixes are replaced with the default language, keeping
 the rest of the path and the query string.
 
+## Starter pages
+
+- `/en` includes a landing page with features and an expandable FAQ.
+- `/en/sign-in`, `/en/sign-up`, and `/en/reset-pwd` demonstrate account forms
+  with client-side validation. They do not authenticate users, create accounts,
+  send reset emails, or transmit or store form values. Use sample values until
+  you connect your own authentication provider.
+
+Import reusable controls from `components/ui`: `Button`, `Input`, `FieldRoot`
+and its field parts, `Checkbox`, and `Accordion` are styled Base UI primitives.
+`Badge` and `Card` are presentational components. Update the site name in
+`lib/constants/brand.ts`.
+
 ## Styling
 
 `app/globals.css` loads Tailwind, animation utilities, and `app/theme.css`, which

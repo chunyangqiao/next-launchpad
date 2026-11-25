@@ -1,0 +1,81 @@
+"use client";
+
+import * as React from "react";
+
+import { cn } from "cn";
+import { OTPInput, OTPInputContext } from "input-otp";
+import { Minus } from "lucide-react";
+
+export function InputOTP({
+  className,
+  containerClassName,
+  ...props
+}: React.ComponentProps<typeof OTPInput> & {
+  containerClassName?: string;
+}) {
+  return (
+    <OTPInput
+      data-slot="input-otp"
+      containerClassName={cn("flex items-center has-disabled:opacity-50", containerClassName)}
+      spellCheck={false}
+      className={cn("disabled:cursor-not-allowed", className)}
+      {...props}
+    />
+  );
+}
+
+export function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="input-otp-group"
+      className={cn(
+        "flex items-center rounded-lg has-aria-invalid:border-danger has-aria-invalid:ring-2 has-aria-invalid:ring-danger/20",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function InputOTPSlot({
+  index,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & {
+  index: number;
+}) {
+  const inputOTPContext = React.useContext(OTPInputContext);
+  const { char, hasFakeCaret, isActive } = inputOTPContext?.slots[index] ?? {};
+
+  return (
+    <div
+      data-slot="input-otp-slot"
+      data-active={isActive}
+      className={cn(
+        "relative flex size-11 items-center justify-center border-y border-r border-control bg-surface text-base transition-all outline-none first:rounded-l-lg first:border-l last:rounded-r-lg aria-invalid:border-danger data-[active=true]:z-10 data-[active=true]:border-accent-text data-[active=true]:ring-2 data-[active=true]:ring-accent-text/30 data-[active=true]:aria-invalid:border-danger data-[active=true]:aria-invalid:ring-danger/20",
+        className,
+      )}
+      {...props}
+    >
+      {char}
+      {hasFakeCaret && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function InputOTPSeparator({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="input-otp-separator"
+      className={cn("flex items-center px-1 text-muted-foreground", className)}
+      role="separator"
+      {...props}
+    >
+      <Minus aria-hidden="true" className="size-4" />
+    </div>
+  );
+}

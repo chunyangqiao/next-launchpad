@@ -23,7 +23,8 @@ export function isLocale(language: string): language is Locale {
 export const SEO_DEFAULTS_BY_LOCALE = {
   en: {
     title: BRAND,
-    description: "A modern Next.js application.",
+    description:
+      "A Next.js starter with accessible UI, account pages, and a theme-ready design system.",
   },
 } satisfies Record<Locale, { title: string; description: string }>;
 
