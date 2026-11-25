@@ -2,20 +2,19 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { DEFAULT_LOCALE, isLocale } from "@/lib/constants/seo";
 
+const LOCALE_SEGMENT = /^[a-z]{2}(?:-[a-z]{4})?(?:-(?:[a-z]{2}|\d{3}))?$/i;
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const [locale] = pathname.split("/").filter(Boolean);
+  const [language] = pathname.slice(1).split("/", 1);
 
-  if (pathname === "/") {
-    return NextResponse.redirect(new URL(`/${DEFAULT_LOCALE}`, request.url));
-  }
-
-  if (locale && isLocale(locale)) {
+  if (isLocale(language)) {
     return NextResponse.next();
   }
 
+  const path = LOCALE_SEGMENT.test(language) ? pathname.slice(language.length + 1) : pathname;
   const url = request.nextUrl.clone();
-  url.pathname = `/${DEFAULT_LOCALE}${pathname}`;
+  url.pathname = path === "/" ? `/${DEFAULT_LOCALE}` : `/${DEFAULT_LOCALE}${path}`;
 
   return NextResponse.redirect(url);
 }

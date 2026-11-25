@@ -20,8 +20,13 @@ export function isLocale(language: string): language is Locale {
   return SUPPORTED_LOCALES.some((locale) => locale === language);
 }
 
-export const DEFAULT_SEO_TITLE = BRAND;
-export const DEFAULT_SEO_DESCRIPTION = "A modern Next.js application.";
+export const SEO_DEFAULTS_BY_LOCALE = {
+  en: {
+    title: BRAND,
+    description: "A modern Next.js application.",
+  },
+} satisfies Record<Locale, { title: string; description: string }>;
+
 export const SIGNUP_PATH = "/sign-up";
 export const SIGNUP_ACTION_NAME = "Create a free account";
 

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { DEFAULT_SEO_DESCRIPTION, DEFAULT_SEO_TITLE, isLocale } from "@/lib/constants/seo";
+import { isLocale, SEO_DEFAULTS_BY_LOCALE } from "@/lib/constants/seo";
 import { homeJsonLd, JsonLd } from "@/lib/seo/json-ld";
 import { pageMetadata } from "@/lib/seo/metadata";
 
@@ -11,10 +11,12 @@ export async function generateMetadata({ params }: PageProps<"/[language]">) {
     notFound();
   }
 
+  const { title, description } = SEO_DEFAULTS_BY_LOCALE[language];
+
   return pageMetadata({
     language,
-    title: { absolute: DEFAULT_SEO_TITLE },
-    description: DEFAULT_SEO_DESCRIPTION,
+    title: { absolute: title },
+    description,
   });
 }
 
@@ -25,10 +27,12 @@ export default async function HomePage({ params }: PageProps<"/[language]">) {
     notFound();
   }
 
+  const { title, description } = SEO_DEFAULTS_BY_LOCALE[language];
+
   return (
     <main>
-      <h1>{DEFAULT_SEO_TITLE}</h1>
-      <p>{DEFAULT_SEO_DESCRIPTION}</p>
+      <h1>{title}</h1>
+      <p>{description}</p>
       <JsonLd data={homeJsonLd(language)} />
     </main>
   );

@@ -2,8 +2,7 @@ import { htmlToPlainText } from "./text";
 import { pageUrl, SITE_ORIGIN } from "./urls";
 import { BRAND, BRAND_ALTERNATE_NAMES } from "@/lib/constants/brand";
 import {
-  DEFAULT_SEO_DESCRIPTION,
-  DEFAULT_SEO_TITLE,
+  SEO_DEFAULTS_BY_LOCALE,
   SIGNUP_ACTION_NAME,
   SIGNUP_PATH,
   SUPPORTED_LOCALES,
@@ -32,6 +31,7 @@ export function homeJsonLd(language: Locale): readonly (JsonLdObject | null)[] |
     return null;
   }
 
+  const { title, description } = SEO_DEFAULTS_BY_LOCALE[language];
   const url = pageUrl(SITE_ORIGIN, language);
   const publisher = organization(SITE_ORIGIN);
   const names = BRAND_ALTERNATE_NAMES.length ? { alternateName: BRAND_ALTERNATE_NAMES } : {};
@@ -42,7 +42,7 @@ export function homeJsonLd(language: Locale): readonly (JsonLdObject | null)[] |
       ...publisher,
       ...names,
       url,
-      description: DEFAULT_SEO_DESCRIPTION,
+      description,
       knowsLanguage: Intl.getCanonicalLocales(SUPPORTED_LOCALES),
       ...(SOCIAL_MEDIA_LINKS.length ? { sameAs: [...new Set(SOCIAL_MEDIA_LINKS)] } : {}),
     },
@@ -67,7 +67,7 @@ export function homeJsonLd(language: Locale): readonly (JsonLdObject | null)[] |
         },
       ],
     },
-    webPageJsonLd({ language, name: DEFAULT_SEO_TITLE, description: DEFAULT_SEO_DESCRIPTION }),
+    webPageJsonLd({ language, name: title, description }),
   ];
 }
 
