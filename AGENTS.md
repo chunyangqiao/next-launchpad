@@ -10,6 +10,16 @@
 
 ## 项目地图
 
+- `app/`：App Router，只放路由与路由专属代码。`(landing)`、`(auth)` 是 route group，不影响 URL。
+- `app/**/_components/`：仅被该路由（组）使用的组件，用私有目录就近放置，不参与路由。
+- `components/ui/`：基于 shadcn 风格的原语（Base UI + Tailwind），无业务含义。
+- `components/feature/`：跨路由复用的业务组件，例如 `brand-link.tsx`。
+- `lib/`：非 UI 的工具与常量（SEO、字体、gtag）。
+
+依赖方向：`app` → `components/feature` → `components/ui`，`ui` 不依赖 `feature` 和 `app`。
+
+放置规则：组件被多个路由使用才放进 `components/feature/`；只有一个路由（组）使用就放在它的 `_components/`。
+
 ## 环境要求
 
 ## 工作流要求

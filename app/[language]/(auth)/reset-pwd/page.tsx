@@ -1,4 +1,4 @@
-import { AuthScreen } from "@/components/auth/auth-screen";
+import { AuthScreen } from "../_components/auth-screen";
 
 export const metadata = { title: "Reset your password" };
 

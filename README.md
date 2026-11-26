@@ -37,6 +37,18 @@ and its field parts, `Checkbox`, and `Accordion` are styled Base UI primitives.
 `Badge` and `Card` are presentational components. Update the site name in
 `lib/constants/brand.ts`.
 
+## Project structure
+
+Components follow the "split by feature or route" strategy from the
+[Next.js project structure guide](https://nextjs.org/docs/app/getting-started/project-structure):
+
+- `components/ui`: shadcn-style primitives with no business logic.
+- `components/feature`: components reused across routes, such as `BrandLink`.
+- `app/**/_components`: private folders for components used by a single route
+  or route group, such as the account screens in `app/[language]/(auth)`.
+
+Dependencies point one way: `app` → `components/feature` → `components/ui`.
+
 ## Styling
 
 `app/globals.css` loads Tailwind, animation utilities, and `app/theme.css`, which

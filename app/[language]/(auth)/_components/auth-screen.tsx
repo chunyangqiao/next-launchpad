@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AuthForm } from "@/components/auth/auth-form";
+import { AuthForm } from "./auth-form";
 import { Badge } from "@/components/ui/badge";
 import { isLocale, SIGNUP_PATH } from "@/lib/constants/seo";
 
-import type { AuthMode } from "@/components/auth/auth-form";
+import type { AuthMode } from "./auth-form";
 
 const screens = {
   "sign-in": {

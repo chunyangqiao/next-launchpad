@@ -1,7 +1,7 @@
 import { ArrowLeft, CircleCheck } from "lucide-react";
 import Link from "next/link";
 
-import { BrandLink } from "@/components/brand-link";
+import { BrandLink } from "@/components/feature/brand-link";
 import { NOINDEX_METADATA } from "@/lib/constants/seo";
 
 export const metadata = NOINDEX_METADATA;

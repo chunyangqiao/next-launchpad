@@ -238,7 +238,7 @@ export function faqJsonLd(
 
 export function JsonLd({ data }: { data: JsonLdData }) {
   const items = (Array.isArray(data) ? data : [data]).filter((item) => item !== null);
-
+  console.info("JSON LD: ", data);
   if (!items.length) {
     return null;
   }
