@@ -14,6 +14,9 @@
 
 ## 工作流要求
 
+- 读代码优先用 `rg` / `rg --files`。
+- 不要提交临时的草稿或探索性文件。
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
