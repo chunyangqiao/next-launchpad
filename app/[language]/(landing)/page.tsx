@@ -179,7 +179,23 @@ export default async function HomePage({ params }: PageProps<"/[language]">) {
 
       <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-line py-6 text-sm text-muted-foreground">
         <BrandLink href={home} />
-        <p>Built with Next.js, Base UI, and Tailwind CSS.</p>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <p>Built with Next.js, Base UI, and Tailwind CSS.</p>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-4 font-semibold">
+            <Link href={`${home}/about-us`} className="hover:text-foreground">
+              About
+            </Link>
+            <Link href={`${home}/privacy-policy`} className="hover:text-foreground">
+              Privacy
+            </Link>
+            <Link href={`${home}/terms-of-service`} className="hover:text-foreground">
+              Terms
+            </Link>
+            <Link href={`${home}/cookie-policy`} className="hover:text-foreground">
+              Cookies
+            </Link>
+          </nav>
+        </div>
       </footer>
       <JsonLd data={homeJsonLd(language)} />
     </div>

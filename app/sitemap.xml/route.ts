@@ -3,7 +3,13 @@ import { SITE_ORIGIN } from "@/lib/seo/urls";
 
 import type { SitemapRoute } from "@/lib/seo/crawlers";
 
-const routes: readonly SitemapRoute[] = [{ path: "/" }];
+const routes: readonly SitemapRoute[] = [
+  { path: "/" },
+  { path: "/about-us" },
+  { path: "/privacy-policy" },
+  { path: "/terms-of-service" },
+  { path: "/cookie-policy" },
+];
 
 export function GET() {
   if (!SITE_ORIGIN) {
